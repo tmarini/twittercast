@@ -26,6 +26,9 @@ $mount = "/mount";
 $username = "source";
 $password = "password";
 
+// if the title contains this text, do not tweet - set to "" to disable
+$adtext = "sponsor";
+
 // END CONFIGURATION
 
 $twitterObj = new EpiTwitter($consumer_key, $consumer_secret, $token, $secret);
@@ -66,14 +69,20 @@ global $curTag;
 
 // add more variables here to get more info from XML
 global $listeners;
-global $current_song;
+global $title;
+global $artist;
+global $current_track;
 
 if ($curTag == "^ICESTATS^SOURCE^LISTENERS") {
 $listeners = $data;
 }
 
+if ($curTag == "^ICESTATS^SOURCE^ARTIST") {
+$artist = $data;
+}
+  
 if ($curTag == "^ICESTATS^SOURCE^TITLE") {
-$current_song = $data;
+$title = $data;
 }}
 
 // control for parsing xml data
@@ -83,10 +92,22 @@ xml_set_character_data_handler($xml_parser, "characterData");
 xml_parse($xml_parser, $xml);
 xml_parser_free($xml_parser);
 
-// tweet preview
-print "$current_song";
+// build tweet
+$current_track = "#NowPlaying: $artist - $title - $listeners Listeners";
+
 
 // post the tweet
-$twitterObj->post('/statuses/update.json', array('status' => $current_song));
+if ($adtext !== "") {
+		$adchk = strpos($current_track, $adtext);
+		if ($adchk === false) {
+			$twitterObj->post('/statuses/update.json', array('status' => $current_track)); 
+      print "$current_track";
+    } else {
+			print "Ad detected! Not tweeting.\n"; 
+		}
+	} else {
+		$twitterObj->post('/statuses/update.json', array('status' => $current_track));
+    print "$current_track";	
+}
 
 ?>
